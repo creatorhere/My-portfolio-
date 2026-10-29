@@ -1,0 +1,17 @@
+# Environment files and secrets
+.env
+.env.*
+!.env.example
+
+# Node dependencies
+**/node_modules/
+
+# Build output and Vite caches
+**/dist/
+**/.vite/
+
+# Python caches and virtual environments
+**/__pycache__/
+*.py[cod]
+**/venv/
+**/.venv/
