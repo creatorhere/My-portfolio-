@@ -7,6 +7,20 @@ const API = import.meta.env.VITE_API_URL || "";
 // A little piece of tape. Put it inside any element with class "taped".
 const Tape = ({ side = "left" }) => <span className={`tape tape-${side}`} />;
 
+function getExternalUrl(value) {
+  if (typeof value !== "string" || !value.trim()) return null;
+
+  try {
+    const url = new URL(value);
+    return url.protocol === "http:" || url.protocol === "https:"
+      ? url.href
+      : null;
+  } catch (error) {
+    if (error instanceof TypeError) return null;
+    throw error;
+  }
+}
+
 function Nav() {
   const links = ["home", "about", "work", "playground", "contact"];
   return (
@@ -87,20 +101,132 @@ function About() {
   );
 }
 
-function Work({ projects, error }) {
+function ProjectPreview({ project }) {
+  const [imageFailed, setImageFailed] = useState(false);
+  const imageUrl = getExternalUrl(project.image_url);
+
+  if (!imageUrl || imageFailed) {
+    return (
+      <div
+        className="work__placeholder"
+        role="img"
+        aria-label={`${project.title} screenshot unavailable`}
+      >
+        <span className="work__placeholder-label">Project preview</span>
+        <span className="work__placeholder-note">Screenshot not provided</span>
+      </div>
+    );
+  }
+
+  return (
+    <img
+      src={imageUrl}
+      alt={`${project.title} project screenshot`}
+      loading="lazy"
+      decoding="async"
+      onError={() => setImageFailed(true)}
+    />
+  );
+}
+
+function ProjectCard({ project }) {
+  const category = project.category || project.tag || "Project";
+  const repositoryUrl = getExternalUrl(project.repository_url);
+  const liveDemoUrl = getExternalUrl(project.live_demo_url);
+  const sourceUrl = getExternalUrl(project.source_url);
+  const technologies = Array.isArray(project.technologies)
+    ? project.technologies.filter(
+        (technology) => typeof technology === "string" && technology.trim(),
+      )
+    : [];
+
+  return (
+    <article className="work" data-color={project.color || "yellow"}>
+      <div className="work__preview">
+        <ProjectPreview project={project} />
+      </div>
+      <div className="work__body">
+        <div className="work__meta">
+          <span className="work__category">{category}</span>
+          {project.date_label && (
+            <span className="work__date">{project.date_label}</span>
+          )}
+        </div>
+        <h3>{project.title}</h3>
+        <p className="work__summary">{project.summary}</p>
+        {sourceUrl && (
+          <a
+            className="work__source"
+            href={sourceUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            View original project
+          </a>
+        )}
+        {technologies.length > 0 && (
+          <ul className="work__stack" aria-label="Technology stack">
+            {technologies.map((technology) => (
+              <li key={technology} className="work__tech">
+                {technology}
+              </li>
+            ))}
+          </ul>
+        )}
+        {(repositoryUrl || liveDemoUrl) && (
+          <div className="work__actions">
+            {repositoryUrl && (
+              <a
+                className="work__link work__link--primary"
+                href={repositoryUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label={`View ${project.title} source on GitHub`}
+              >
+                GitHub Repo
+              </a>
+            )}
+            {liveDemoUrl && (
+              <a
+                className="work__link"
+                href={liveDemoUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label={`Open ${project.title} live demo`}
+              >
+                Live Demo
+              </a>
+            )}
+          </div>
+        )}
+      </div>
+    </article>
+  );
+}
+
+function Work({ projects, error, loading }) {
   return (
     <section id="work" className="section">
       <p className="hand">maybe my work?</p>
       <h2 className="pixel">FEATURED WORKS</h2>
-      {error && <p className="mono small">{error}</p>}
+      {error && (
+        <p className="mono small work__message" role="alert">
+          {error}
+        </p>
+      )}
+      {loading && (
+        <p className="mono small work__message" role="status">
+          Loading projects...
+        </p>
+      )}
+      {!loading && !error && projects.length === 0 && (
+        <p className="mono small work__message">
+          No featured projects are available yet.
+        </p>
+      )}
       <div className="works">
-        {projects.map((p) => (
-          <article key={p.id} className={`work ${p.color}`}>
-            <span className="mono small">● {p.date_label}</span>
-            <h3>{p.title}</h3>
-            <p>{p.summary}</p>
-            <span className="chip sand">{p.tag}</span>
-          </article>
+        {projects.map((project) => (
+          <ProjectCard key={project.id} project={project} />
         ))}
       </div>
     </section>
@@ -196,7 +322,12 @@ function Contact() {
       </form>
       <div className="links">
         {me.links.map((l) => (
-          <a key={l.label} href={l.href} target="_blank" rel="noreferrer">
+          <a
+            key={l.label}
+            href={l.href}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
             {l.label}
           </a>
         ))}
@@ -208,12 +339,39 @@ function Contact() {
 export default function App() {
   const [projects, setProjects] = useState([]);
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch(`${API}/api/projects`)
-      .then((r) => r.json())
-      .then(setProjects)
-      .catch(() => setError("Projects couldn't load. Is the backend running?"));
+    let cancelled = false;
+
+    async function loadProjects() {
+      try {
+        const response = await fetch(`${API}/api/projects`);
+        if (!response.ok) {
+          throw new Error(`Projects request failed with status ${response.status}`);
+        }
+
+        const data = await response.json();
+        if (!Array.isArray(data)) {
+          throw new Error("Projects API returned an unexpected response.");
+        }
+
+        if (!cancelled) setProjects(data);
+      } catch {
+        if (!cancelled) {
+          setError(
+            "Projects couldn't load. Check the backend connection and database setup.",
+          );
+        }
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    }
+
+    loadProjects();
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   return (
@@ -222,7 +380,7 @@ export default function App() {
       <main>
         <Hero />
         <About />
-        <Work projects={projects} error={error} />
+        <Work projects={projects} error={error} loading={loading} />
         <Playground />
         <Contact />
       </main>

@@ -17,11 +17,35 @@ def get_conn():
     return psycopg.connect(os.environ["DATABASE_URL"], row_factory=dict_row)
 
 
-# Starter projects. Edit these, or change rows directly in the database later.
+# Starter projects are used only when the projects table is empty.
 SAMPLE_PROJECTS = [
-    ("Wayline", "Making a whole city's transit app feel less like decoding a puzzle.", "Mar 2026", "mobility", "yellow"),
-    ("Tandem", "From 'who owes who' to money that finally feels shared.", "Feb 2026", "fintech", "dark"),
-    ("Forge", "Getting a new engineer from day one to shipping without the panic.", "Jan 2026", "devtools", "yellow"),
+    (
+        "MoneyFlow",
+        "Frontend-only finance prototype with preloaded sample expenses, client-side "
+        "totals and category breakdowns, and editable budgets. No connected "
+        "persistence is included, and analytics charts are placeholders.",
+        "Updated Mar 2026",
+        "Finance prototype",
+        "yellow",
+    ),
+    (
+        "FinBuddy / Budgenix fork",
+        "Fork of kaihere14/Budgenix; this branch adds no fork-specific code. "
+        "The upstream app offers chat-based expense logging, rule-based budget "
+        "advice, and spending charts.",
+        "Forked Nov 2025",
+        "Open-source fork",
+        "green",
+    ),
+    (
+        "My Developer Portfolio",
+        "A notebook-style portfolio built with React, FastAPI, and PostgreSQL on "
+        "Tiger Cloud, with projects loaded from the API and contact messages saved "
+        "to the database.",
+        "Updated Oct 2026",
+        "Full-stack",
+        "blue",
+    ),
 ]
 
 
@@ -84,7 +108,30 @@ class ContactMessage(BaseModel):
 @app.get("/api/projects")
 def list_projects():
     with get_conn() as conn:
-        return conn.execute("SELECT * FROM projects ORDER BY id").fetchall()
+        rows = conn.execute("SELECT * FROM projects").fetchall()
+
+    projects = [
+        dict(row)
+        for row in rows
+        if row.get("is_featured", True)
+    ]
+    projects.sort(
+        key=lambda project: (
+            project.get("sort_order") or 0,
+            project["id"],
+        )
+    )
+
+    for project in projects:
+        project["category"] = project.get("category") or project.get("tag")
+        project["technologies"] = project.get("technologies") or []
+        project.setdefault("repository_url", None)
+        project.setdefault("live_demo_url", None)
+        project.setdefault("source_url", None)
+        project.setdefault("image_url", None)
+        project["sort_order"] = project.get("sort_order") or 0
+
+    return projects
 
 
 @app.post("/api/contact")
