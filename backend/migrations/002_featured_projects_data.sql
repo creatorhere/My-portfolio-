@@ -14,7 +14,7 @@ WHERE repository_url = 'https://github.com/creatorhere/mini-project';
 UPDATE projects
 SET slug = 'haunted-terminal',
     title = 'Haunted Terminal',
-    summary = 'A Python command-line shell wrapper that runs normal commands, then asks a local Ollama Gemma 3 model for a short ghostly comment based on the command and output. Whispers are saved to a local log.',
+    summary = 'A Python terminal wrapper that runs normal commands and asks a local Ollama Gemma 3 model for a brief ghostly response based on the command and up to 400 characters of output. Timestamped responses are saved to a local log.',
     date_label = 'Oct 2026',
     tag = 'Developer tools',
     color = 'dark',
@@ -22,7 +22,7 @@ SET slug = 'haunted-terminal',
     live_demo_url = NULL,
     source_url = NULL,
     image_url = NULL,
-    technologies = ARRAY['Python 3.9+', 'Ollama', 'Gemma 3', 'ollama Python package']::TEXT[],
+    technologies = ARRAY['Python 3.9+', 'Ollama', 'Gemma 3:1b', 'ollama Python package']::TEXT[],
     sort_order = 1,
     is_featured = TRUE
 WHERE id = (
@@ -97,7 +97,7 @@ VALUES
     (
         'haunted-terminal',
         'Haunted Terminal',
-        'A Python command-line shell wrapper that runs normal commands, then asks a local Ollama Gemma 3 model for a short ghostly comment based on the command and output. Whispers are saved to a local log.',
+        'A Python terminal wrapper that runs normal commands and asks a local Ollama Gemma 3 model for a brief ghostly response based on the command and up to 400 characters of output. Timestamped responses are saved to a local log.',
         'Oct 2026',
         'Developer tools',
         'dark',
@@ -105,7 +105,7 @@ VALUES
         NULL,
         NULL,
         NULL,
-        ARRAY['Python 3.9+', 'Ollama', 'Gemma 3', 'ollama Python package']::TEXT[],
+        ARRAY['Python 3.9+', 'Ollama', 'Gemma 3:1b', 'ollama Python package']::TEXT[],
         1,
         TRUE
     ),

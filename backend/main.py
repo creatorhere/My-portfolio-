@@ -21,8 +21,9 @@ def get_conn():
 SAMPLE_PROJECTS = [
     (
         "Haunted Terminal",
-        "A Python shell wrapper that runs normal commands, then asks a local Ollama "
-        "Gemma 3 model for a short ghostly comment and saves the whispers to a log.",
+        "A Python terminal wrapper that runs normal commands and asks a local Ollama "
+        "Gemma 3 model for a brief ghostly response based on the command and up to "
+        "400 characters of output. Timestamped responses are saved to a local log.",
         "Oct 2026",
         "Developer tools",
         "dark",
