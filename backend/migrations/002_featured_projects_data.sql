@@ -5,29 +5,51 @@ UPDATE projects
 SET is_featured = FALSE
 WHERE title IN ('Wayline', 'Tandem', 'Forge');
 
--- Update existing matching rows so the script works with the initial seed data.
+-- Hide rows from the prior finance-project entry without deleting their history.
 UPDATE projects
-SET slug = 'moneyflow',
-    summary = 'Frontend-only finance prototype with preloaded sample expenses, client-side totals and category breakdowns, and editable budgets. No connected persistence is included, and analytics charts are placeholders.',
-    date_label = 'Updated Mar 2026',
-    tag = 'Finance prototype',
-    color = 'yellow',
-    repository_url = 'https://github.com/creatorhere/mini-project',
+SET is_featured = FALSE
+WHERE repository_url = 'https://github.com/creatorhere/mini-project';
+
+-- Reuse an existing Haunted Terminal row or its prior finance-project row.
+UPDATE projects
+SET slug = 'haunted-terminal',
+    title = 'Haunted Terminal',
+    summary = 'A Python command-line shell wrapper that runs normal commands, then asks a local Ollama Gemma 3 model for a short ghostly comment based on the command and output. Whispers are saved to a local log.',
+    date_label = 'Oct 2026',
+    tag = 'Developer tools',
+    color = 'dark',
+    repository_url = 'https://github.com/creatorhere/haunted-terminal',
     live_demo_url = NULL,
     source_url = NULL,
     image_url = NULL,
-    technologies = ARRAY['HTML', 'CSS', 'JavaScript', 'Tailwind CSS']::TEXT[],
+    technologies = ARRAY['Python 3.9+', 'Ollama', 'Gemma 3', 'ollama Python package']::TEXT[],
     sort_order = 1,
     is_featured = TRUE
 WHERE id = (
     SELECT id FROM projects
-    WHERE slug = 'moneyflow' OR title = 'MoneyFlow'
-    ORDER BY COALESCE(slug = 'moneyflow', FALSE) DESC, id
+    WHERE slug = 'haunted-terminal'
+       OR title = 'Haunted Terminal'
+       OR repository_url = 'https://github.com/creatorhere/mini-project'
+    ORDER BY
+        CASE
+            WHEN slug = 'haunted-terminal' THEN 1
+            WHEN title = 'Haunted Terminal' THEN 2
+            ELSE 3
+        END,
+        id
     LIMIT 1
 );
 
+-- If duplicate legacy rows exist, leave only the canonical featured project.
+UPDATE projects
+SET is_featured = FALSE
+WHERE (title = 'Haunted Terminal'
+       OR repository_url = 'https://github.com/creatorhere/mini-project')
+  AND slug IS DISTINCT FROM 'haunted-terminal';
+
 UPDATE projects
 SET slug = 'finbuddy-budgenix-fork',
+    title = 'FinBuddy / Budgenix fork',
     summary = 'Fork of kaihere14/Budgenix; this branch has no fork-specific code changes. The upstream app offers chat-based expense logging, rule-based budget advice, and spending charts.',
     date_label = 'Forked Nov 2025',
     tag = 'Open-source fork',
@@ -48,6 +70,7 @@ WHERE id = (
 
 UPDATE projects
 SET slug = 'my-developer-portfolio',
+    title = 'My Developer Portfolio',
     summary = 'A notebook-style developer portfolio built with React, FastAPI, and PostgreSQL on Tiger Cloud, with projects loaded from the API and contact messages saved to the database.',
     date_label = 'Updated Oct 2026',
     tag = 'Full-stack',
@@ -72,17 +95,17 @@ INSERT INTO projects (
 )
 VALUES
     (
-        'moneyflow',
-        'MoneyFlow',
-        'Frontend-only finance prototype with preloaded sample expenses, client-side totals and category breakdowns, and editable budgets. No connected persistence is included, and analytics charts are placeholders.',
-        'Updated Mar 2026',
-        'Finance prototype',
-        'yellow',
-        'https://github.com/creatorhere/mini-project',
+        'haunted-terminal',
+        'Haunted Terminal',
+        'A Python command-line shell wrapper that runs normal commands, then asks a local Ollama Gemma 3 model for a short ghostly comment based on the command and output. Whispers are saved to a local log.',
+        'Oct 2026',
+        'Developer tools',
+        'dark',
+        'https://github.com/creatorhere/haunted-terminal',
         NULL,
         NULL,
         NULL,
-        ARRAY['HTML', 'CSS', 'JavaScript', 'Tailwind CSS']::TEXT[],
+        ARRAY['Python 3.9+', 'Ollama', 'Gemma 3', 'ollama Python package']::TEXT[],
         1,
         TRUE
     ),

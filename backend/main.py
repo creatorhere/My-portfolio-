@@ -20,13 +20,12 @@ def get_conn():
 # Starter projects are used only when the projects table is empty.
 SAMPLE_PROJECTS = [
     (
-        "MoneyFlow",
-        "Frontend-only finance prototype with preloaded sample expenses, client-side "
-        "totals and category breakdowns, and editable budgets. No connected "
-        "persistence is included, and analytics charts are placeholders.",
-        "Updated Mar 2026",
-        "Finance prototype",
-        "yellow",
+        "Haunted Terminal",
+        "A Python shell wrapper that runs normal commands, then asks a local Ollama "
+        "Gemma 3 model for a short ghostly comment and saves the whispers to a log.",
+        "Oct 2026",
+        "Developer tools",
+        "dark",
     ),
     (
         "FinBuddy / Budgenix fork",
@@ -108,20 +107,16 @@ class ContactMessage(BaseModel):
 @app.get("/api/projects")
 def list_projects():
     with get_conn() as conn:
-        rows = conn.execute("SELECT * FROM projects").fetchall()
+        rows = conn.execute(
+            """
+            SELECT *
+            FROM projects
+            WHERE is_featured = TRUE
+            ORDER BY sort_order ASC, id ASC
+            """
+        ).fetchall()
 
-    projects = [
-        dict(row)
-        for row in rows
-        if row.get("is_featured", True)
-    ]
-    projects.sort(
-        key=lambda project: (
-            project.get("sort_order") or 0,
-            project["id"],
-        )
-    )
-
+    projects = [dict(row) for row in rows]
     for project in projects:
         project["category"] = project.get("category") or project.get("tag")
         project["technologies"] = project.get("technologies") or []
